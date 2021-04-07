@@ -38,6 +38,7 @@ class Lights : public BnLights {
     private:
       std::vector<HwLight> mAvailableLights;
       int setRgbLedsParams(const HwLightState& state);
+      bool mBatteryNotification;
 };
 
 }  // namespace light
