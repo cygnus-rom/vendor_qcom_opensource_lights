@@ -190,9 +190,18 @@ ndk::ScopedAStatus Lights::setLightState(int id, const HwLightState& state) {
         return ndk::ScopedAStatus::fromExceptionCode(EX_UNSUPPORTED_OPERATION);
     }
 
+    HwLight const& light = mAvailableLights[id];
+
+    // Don't set LEDs for other notifications if battery notification is set
+    if (light.type != LightType::BATTERY && mBatteryNotification)
+        return ndk::ScopedAStatus::ok();
+
     int ret = setRgbLedsParams(state);
     if (ret != 0)
             return ndk::ScopedAStatus::fromServiceSpecificError(ret);
+
+    if (light.type == LightType::BATTERY)
+        mBatteryNotification = (state.color & 0x00FFFFFF);
 
     return ndk::ScopedAStatus::ok();
 }
