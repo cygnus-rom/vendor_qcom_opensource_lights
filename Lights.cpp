@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2021, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2021, Qualcomm Innovation Center, Inc. All rights reserved.
  * Not a Contribution.
  *
  * Copyright (C) 2019 The Android Open Source Project
@@ -85,6 +86,18 @@ static int write_int_to_file(const char *path, int value) {
     return -errno;
 }
 
+static int setLedBreathParam(enum rgb_led led, int breath) {
+    char file[48];
+    int rc;
+
+    snprintf(file, sizeof(file),"/sys/class/leds/%s/breath", rgb_led_name[led]);
+    rc = write_int_to_file(file, breath);
+    if (rc < 0)
+        ALOGE("%s does not support breath", rgb_led_name[led]);
+
+    return rc;
+}
+
 static int setLedDelayParams(enum rgb_led led, int flashOnMs, int flashOffMs) {
     char file[48];
     int rc;
@@ -158,8 +171,19 @@ int Lights::setRgbLedsParams(const HwLightState& state) {
     int const red = (colorRGB >> 16) & 0xFF;
     int const green = (colorRGB >> 8) & 0xFF;
     int const blue = colorRGB & 0xFF;
+    int const breath = (state.flashOnMs != 0 && state.flashOffMs != 0);
 
     switch (state.flashMode) {
+    case FlashMode::HARDWARE:
+        if (!!red)
+            rc = setLedBreathParam(LED_RED, breath);
+        if (!!green)
+            rc |= setLedBreathParam(LED_GREEN, breath);
+        if (!!blue)
+            rc |= setLedBreathParam(LED_BLUE, breath);
+        /* Fallback to blinking if breath is not supported */
+        if (rc == 0)
+            break;
     case FlashMode::TIMED:
         if (!!red)
             rc = setLedDelayParams(LED_RED, state.flashOnMs, state.flashOffMs);
@@ -179,7 +203,7 @@ int Lights::setRgbLedsParams(const HwLightState& state) {
         break;
     }
 
-    ALOGD("colorRGB = %08X, onMs = %d, offMs = %d, rc: %d", colorRGB, state.flashOnMs, state.flashOffMs, rc);
+    ALOGD("colorRGB = %08X, mode = %d, onMs = %d, offMs = %d, rc: %d", colorRGB, state.flashMode, state.flashOnMs, state.flashOffMs, rc);
 
     return rc;
 }
