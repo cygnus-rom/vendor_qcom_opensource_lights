@@ -18,5 +18,6 @@ limitations under the License.
     <hal format="aidl">
         <name>android.hardware.light</name>
         <fqname>ILights/default</fqname>
+        <version>2</version>
     </hal>
 </manifest>
